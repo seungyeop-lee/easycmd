@@ -2,7 +2,7 @@ package test
 
 import (
 	"bytes"
-	"easycmd"
+	"github.com/seungyeop-lee/easycmd"
 	"testing"
 )
 
