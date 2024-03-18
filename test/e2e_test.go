@@ -24,3 +24,26 @@ func TestSimple(t *testing.T) {
 		t.Errorf("expected nil, got %v", err)
 	}
 }
+
+func TestRunShell(t *testing.T) {
+	cmd := easycmd.New()
+
+	err := cmd.RunShell("(cd .. && pwd)")
+
+	if err != nil {
+		t.Errorf("expected nil, got %v", err)
+	}
+}
+
+func TestRunMultiLineShell(t *testing.T) {
+	cmd := easycmd.New()
+
+	err := cmd.RunShell(`
+	pwd
+	ls -al
+`)
+
+	if err != nil {
+		t.Errorf("expected nil, got %v", err)
+	}
+}
