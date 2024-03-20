@@ -9,24 +9,24 @@ import (
 	"strings"
 )
 
-type Command string
+type command string
 
-var bashPrefix Command = "bash -c "
-var powershellPrefix Command = "powershell.exe "
+var bashPrefix command = "bash -c "
+var powershellPrefix command = "powershell.exe "
 
-func (c Command) ShellCommand() Command {
+func (c command) ShellCommand() command {
 	return bashPrefix + c
 }
 
-func (c Command) PowershellCommand() Command {
+func (c command) PowershellCommand() command {
 	return powershellPrefix + c
 }
 
-func (c Command) Name() string {
+func (c command) Name() string {
 	return strings.Split(string(c), " ")[0]
 }
 
-func (c Command) Args() []string {
+func (c command) Args() []string {
 	command := string(c)
 	switch true {
 	case strings.HasPrefix(command, bashPrefix.String()):
@@ -38,7 +38,7 @@ func (c Command) Args() []string {
 	}
 }
 
-func (c Command) String() string {
+func (c command) String() string {
 	return string(c)
 }
 
@@ -84,31 +84,31 @@ func New(configApplies ...configApply) *Cmd {
 	}
 }
 
-func (c *Cmd) Run(command Command) error {
-	return run(command, c.c.RunDir, c.c.StdIn, c.c.StdOut, c.c.StdErr)
+func (c *Cmd) Run(commandStr string) error {
+	return run(command(commandStr), c.c.RunDir, c.c.StdIn, c.c.StdOut, c.c.StdErr)
 }
 
-func (c *Cmd) RunShell(command Command) error {
-	return run(command.ShellCommand(), c.c.RunDir, c.c.StdIn, c.c.StdOut, c.c.StdErr)
+func (c *Cmd) RunShell(commandStr string) error {
+	return run(command(commandStr).ShellCommand(), c.c.RunDir, c.c.StdIn, c.c.StdOut, c.c.StdErr)
 }
 
-func (c *Cmd) RunPowershell(command Command) error {
-	return run(command.PowershellCommand(), c.c.RunDir, c.c.StdIn, c.c.StdOut, c.c.StdErr)
+func (c *Cmd) RunPowershell(commandStr string) error {
+	return run(command(commandStr).PowershellCommand(), c.c.RunDir, c.c.StdIn, c.c.StdOut, c.c.StdErr)
 }
 
-func (c *Cmd) RunWithDir(command Command, runDir RunDir) error {
-	return run(command, runDir, c.c.StdIn, c.c.StdOut, c.c.StdErr)
+func (c *Cmd) RunWithDir(commandStr string, runDir string) error {
+	return run(command(commandStr), RunDir(runDir), c.c.StdIn, c.c.StdOut, c.c.StdErr)
 }
 
-func (c *Cmd) RunShellWithDir(command Command, runDir RunDir) error {
-	return run(command.ShellCommand(), runDir, c.c.StdIn, c.c.StdOut, c.c.StdErr)
+func (c *Cmd) RunShellWithDir(commandStr string, runDir string) error {
+	return run(command(commandStr).ShellCommand(), RunDir(runDir), c.c.StdIn, c.c.StdOut, c.c.StdErr)
 }
 
-func (c *Cmd) RunPowershellWithDir(command Command, runDir RunDir) error {
-	return run(command.PowershellCommand(), runDir, c.c.StdIn, c.c.StdOut, c.c.StdErr)
+func (c *Cmd) RunPowershellWithDir(commandStr string, runDir string) error {
+	return run(command(commandStr).PowershellCommand(), RunDir(runDir), c.c.StdIn, c.c.StdOut, c.c.StdErr)
 }
 
-func run(command Command, runDir RunDir, stdin StdIn, stdout StdOut, stderr StdErr) error {
+func run(command command, runDir RunDir, stdin StdIn, stdout StdOut, stderr StdErr) error {
 	if command == "" {
 		return EmptyCmdError
 	}
