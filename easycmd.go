@@ -42,16 +42,16 @@ func (c command) String() string {
 	return string(c)
 }
 
-type RunDir string
-type StdIn io.Reader
-type StdOut io.Writer
-type StdErr io.Writer
+type runDir string
+type stdIn io.Reader
+type stdOut io.Writer
+type stdErr io.Writer
 
 type Config struct {
-	RunDir RunDir
-	StdIn  StdIn
-	StdOut StdOut
-	StdErr StdErr
+	RunDir runDir
+	StdIn  stdIn
+	StdOut stdOut
+	StdErr stdErr
 }
 
 func (c *Config) fillDefault() {
@@ -96,19 +96,19 @@ func (c *Cmd) RunPowershell(commandStr string) error {
 	return run(command(commandStr).PowershellCommand(), c.c.RunDir, c.c.StdIn, c.c.StdOut, c.c.StdErr)
 }
 
-func (c *Cmd) RunWithDir(commandStr string, runDir string) error {
-	return run(command(commandStr), RunDir(runDir), c.c.StdIn, c.c.StdOut, c.c.StdErr)
+func (c *Cmd) RunWithDir(commandStr string, runDirStr string) error {
+	return run(command(commandStr), runDir(runDirStr), c.c.StdIn, c.c.StdOut, c.c.StdErr)
 }
 
-func (c *Cmd) RunShellWithDir(commandStr string, runDir string) error {
-	return run(command(commandStr).ShellCommand(), RunDir(runDir), c.c.StdIn, c.c.StdOut, c.c.StdErr)
+func (c *Cmd) RunShellWithDir(commandStr string, runDirStr string) error {
+	return run(command(commandStr).ShellCommand(), runDir(runDirStr), c.c.StdIn, c.c.StdOut, c.c.StdErr)
 }
 
-func (c *Cmd) RunPowershellWithDir(commandStr string, runDir string) error {
-	return run(command(commandStr).PowershellCommand(), RunDir(runDir), c.c.StdIn, c.c.StdOut, c.c.StdErr)
+func (c *Cmd) RunPowershellWithDir(commandStr string, runDirStr string) error {
+	return run(command(commandStr).PowershellCommand(), runDir(runDirStr), c.c.StdIn, c.c.StdOut, c.c.StdErr)
 }
 
-func run(command command, runDir RunDir, stdin StdIn, stdout StdOut, stderr StdErr) error {
+func run(command command, runDir runDir, stdin stdIn, stdout stdOut, stderr stdErr) error {
 	if command == "" {
 		return EmptyCmdError
 	}
