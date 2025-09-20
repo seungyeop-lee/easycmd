@@ -41,9 +41,7 @@ import (
 
 func main() {
     out := &bytes.Buffer{}
-    cmd := easycmd.New(func(c *easycmd.Config) {
-        c.StdOut = out
-    })
+    cmd := easycmd.New(easycmd.WithStdOut(out))
 
     err := cmd.Run("echo hello world")
     if err != nil {
@@ -102,15 +100,54 @@ import (
 )
 
 cmd := easycmd.New(
-    func(c *easycmd.Config) {
-        c.RunDir = "/tmp"                    // 실행 디렉토리 설정
-        c.StdIn = strings.NewReader("input") // 표준 입력 설정
-        c.StdOut = os.Stdout                 // 표준 출력 설정
-        c.StdErr = os.Stderr                 // 표준 에러 설정
-    },
+    easycmd.WithStdIn(strings.NewReader("input")), // 표준 입력 설정
+    easycmd.WithStdOut(os.Stdout),                 // 표준 출력 설정
+    easycmd.WithStdErr(os.Stderr),                 // 표준 에러 설정
 )
 
 err := cmd.Run("cat") // 표준 입력에서 "input"을 읽어서 출력
+```
+
+### 디버그 모드
+
+```go
+import (
+    "bytes"
+    "fmt"
+)
+
+// 기본 디버그 모드 (디버그 출력은 stderr로)
+cmd := easycmd.New(easycmd.WithDebug())
+err := cmd.Run("echo hello world")
+
+// 커스텀 디버그 출력 스트림
+debugOut := &bytes.Buffer{}
+cmd = easycmd.New(easycmd.WithDebug(debugOut))
+err = cmd.Run("echo hello world")
+
+fmt.Println("디버그 출력:", debugOut.String())
+```
+
+### 복합 설정 사용
+
+```go
+import (
+    "bytes"
+    "strings"
+)
+
+out := &bytes.Buffer{}
+debugOut := &bytes.Buffer{}
+input := strings.NewReader("test input\n")
+
+cmd := easycmd.New(
+    easycmd.WithStdIn(input),
+    easycmd.WithStdOut(out),
+    easycmd.WithStdErr(os.Stderr),
+    easycmd.WithDebug(debugOut),
+)
+
+err := cmd.RunShell("cat && echo 'processing...' >&2")
 ```
 
 ## API 레퍼런스
@@ -125,16 +162,22 @@ err := cmd.Run("cat") // 표준 입력에서 "input"을 읽어서 출력
 - `RunShellWithDir(commandStr string, runDirStr string) error`: 특정 디렉토리에서 Shell 명령어 실행
 - `RunPowershellWithDir(commandStr string, runDirStr string) error`: 특정 디렉토리에서 PowerShell 명령어 실행
 
-### Config 설정 옵션
+### 설정 함수
 
-```go
-type Config struct {
-    RunDir runDir    // 명령어 실행 디렉토리
-    StdIn  stdIn     // 표준 입력 (기본값: os.Stdin)
-    StdOut stdOut    // 표준 출력 (기본값: os.Stdout)
-    StdErr stdErr    // 표준 에러 (기본값: os.Stderr)
-}
-```
+- `WithStdIn(reader io.Reader) configApply`: 표준 입력 설정
+- `WithStdOut(writer io.Writer) configApply`: 표준 출력 설정
+- `WithStdErr(writer io.Writer) configApply`: 표준 에러 설정
+- `WithDebug(debugOut ...io.Writer) configApply`: 디버그 모드 활성화 및 디버그 출력 스트림 설정
+
+#### 디버그 모드 출력 내용
+
+디버그 모드가 활성화되면 다음 정보들이 출력됩니다:
+
+- 파싱된 명령어 문자열
+- 실행될 명령어 이름
+- 명령어 인수 배열
+- 실행 디렉토리 (설정된 경우)
+- 명령어 실행 시작/완료/실패 메시지
 
 ## 에러 처리
 
