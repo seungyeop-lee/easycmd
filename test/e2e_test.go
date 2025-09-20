@@ -14,9 +14,7 @@ import (
 func TestSimple(t *testing.T) {
 	// given
 	out := &bytes.Buffer{}
-	cmd := easycmd.New(func(c *easycmd.Config) {
-		c.StdOut = out
-	})
+	cmd := easycmd.New(easycmd.WithStdOut(out))
 
 	// when
 	err := cmd.Run("echo hello world")
@@ -56,9 +54,7 @@ func TestRunMultiLineShell(t *testing.T) {
 func TestRunWithDir(t *testing.T) {
 	// given
 	out := &bytes.Buffer{}
-	cmd := easycmd.New(func(c *easycmd.Config) {
-		c.StdOut = out
-	})
+	cmd := easycmd.New(easycmd.WithStdOut(out))
 
 	// when
 	err := cmd.RunWithDir("pwd", "..")
@@ -78,9 +74,7 @@ func TestRunWithDir(t *testing.T) {
 func TestRunShellWithDir(t *testing.T) {
 	// given
 	out := &bytes.Buffer{}
-	cmd := easycmd.New(func(c *easycmd.Config) {
-		c.StdOut = out
-	})
+	cmd := easycmd.New(easycmd.WithStdOut(out))
 
 	// when - 상위 디렉토리에서 현재 디렉토리명 확인
 	err := cmd.RunShellWithDir("basename $(pwd)", "..")
@@ -157,10 +151,10 @@ func TestStdErr(t *testing.T) {
 	// given
 	out := &bytes.Buffer{}
 	errOut := &bytes.Buffer{}
-	cmd := easycmd.New(func(c *easycmd.Config) {
-		c.StdOut = out
-		c.StdErr = errOut
-	})
+	cmd := easycmd.New(
+		easycmd.WithStdOut(out),
+		easycmd.WithStdErr(errOut),
+	)
 
 	// when - stderr로 출력하는 명령어 실행
 	err := cmd.RunShell("echo 'error message' >&2")
@@ -183,10 +177,10 @@ func TestStdIn(t *testing.T) {
 	// given
 	input := strings.NewReader("hello from stdin\n")
 	out := &bytes.Buffer{}
-	cmd := easycmd.New(func(c *easycmd.Config) {
-		c.StdIn = input
-		c.StdOut = out
-	})
+	cmd := easycmd.New(
+		easycmd.WithStdIn(input),
+		easycmd.WithStdOut(out),
+	)
 
 	// when - stdin에서 입력을 읽는 명령어 실행
 	err := cmd.Run("cat")
@@ -207,9 +201,7 @@ func TestRunDirConfig(t *testing.T) {
 	tempDir := os.TempDir()
 
 	// RunWithDir 메서드를 사용하여 runDir 설정 테스트
-	cmd := easycmd.New(func(c *easycmd.Config) {
-		c.StdOut = out
-	})
+	cmd := easycmd.New(easycmd.WithStdOut(out))
 
 	// when - RunWithDir를 사용하여 특정 디렉토리에서 실행
 	err := cmd.RunWithDir("pwd", tempDir)
@@ -236,15 +228,9 @@ func TestMultipleConfigs(t *testing.T) {
 	input := strings.NewReader("test input\n")
 
 	cmd := easycmd.New(
-		func(c *easycmd.Config) {
-			c.StdOut = out
-		},
-		func(c *easycmd.Config) {
-			c.StdErr = errOut
-		},
-		func(c *easycmd.Config) {
-			c.StdIn = input
-		},
+		easycmd.WithStdOut(out),
+		easycmd.WithStdErr(errOut),
+		easycmd.WithStdIn(input),
 	)
 
 	// when - 복합 명령어 실행 (stdin 읽고 stdout과 stderr 모두 사용)
@@ -267,9 +253,7 @@ func TestMultipleConfigs(t *testing.T) {
 func TestCommandParsing(t *testing.T) {
 	// given
 	out := &bytes.Buffer{}
-	cmd := easycmd.New(func(c *easycmd.Config) {
-		c.StdOut = out
-	})
+	cmd := easycmd.New(easycmd.WithStdOut(out))
 
 	// when - 복합 명령어 테스트 (Name과 Args가 올바르게 파싱되는지 간접 확인)
 	err := cmd.Run("echo hello world test")
@@ -288,9 +272,7 @@ func TestCommandParsing(t *testing.T) {
 func TestCommandParsingWithQuotes(t *testing.T) {
 	// given
 	out := &bytes.Buffer{}
-	cmd := easycmd.New(func(c *easycmd.Config) {
-		c.StdOut = out
-	})
+	cmd := easycmd.New(easycmd.WithStdOut(out))
 
 	// when - 따옴표가 포함된 명령어 테스트
 	err := cmd.Run("echo 'hello world'")
@@ -309,9 +291,7 @@ func TestCommandParsingWithQuotes(t *testing.T) {
 func TestCommandParsingWithDoubleQuotes(t *testing.T) {
 	// given
 	out := &bytes.Buffer{}
-	cmd := easycmd.New(func(c *easycmd.Config) {
-		c.StdOut = out
-	})
+	cmd := easycmd.New(easycmd.WithStdOut(out))
 
 	// when - 이중 따옴표가 포함된 명령어 테스트
 	err := cmd.Run(`echo "hello world"`)
@@ -330,9 +310,7 @@ func TestCommandParsingWithDoubleQuotes(t *testing.T) {
 func TestSingleCommand(t *testing.T) {
 	// given
 	out := &bytes.Buffer{}
-	cmd := easycmd.New(func(c *easycmd.Config) {
-		c.StdOut = out
-	})
+	cmd := easycmd.New(easycmd.WithStdOut(out))
 
 	// when - 인수가 없는 단일 명령어 테스트
 	err := cmd.Run("pwd")
@@ -351,9 +329,7 @@ func TestSingleCommand(t *testing.T) {
 func TestShellCommandWrapping(t *testing.T) {
 	// given
 	out := &bytes.Buffer{}
-	cmd := easycmd.New(func(c *easycmd.Config) {
-		c.StdOut = out
-	})
+	cmd := easycmd.New(easycmd.WithStdOut(out))
 
 	// when - 쉘 특화 문법 테스트 (bash 래핑이 올바르게 작동하는지 확인)
 	err := cmd.RunShell("VAR=test; echo $VAR")
@@ -379,9 +355,7 @@ func TestPowershellCommandWrapping(t *testing.T) {
 
 	// given
 	out := &bytes.Buffer{}
-	cmd := easycmd.New(func(c *easycmd.Config) {
-		c.StdOut = out
-	})
+	cmd := easycmd.New(easycmd.WithStdOut(out))
 
 	// when - PowerShell 명령어 테스트
 	err := cmd.RunPowershell("Write-Output 'Hello PowerShell'")
@@ -407,9 +381,7 @@ func TestPowershellWithDir(t *testing.T) {
 
 	// given
 	out := &bytes.Buffer{}
-	cmd := easycmd.New(func(c *easycmd.Config) {
-		c.StdOut = out
-	})
+	cmd := easycmd.New(easycmd.WithStdOut(out))
 
 	// when - PowerShell 명령어를 특정 디렉토리에서 실행
 	err := cmd.RunPowershellWithDir("Get-Location", "..")
@@ -422,5 +394,176 @@ func TestPowershellWithDir(t *testing.T) {
 	result := out.String()
 	if !strings.Contains(result, "seungyeop-lee") {
 		t.Errorf("expected path to contain 'seungyeop-lee', got %s", result)
+	}
+}
+
+func TestDebugMode(t *testing.T) {
+	// given
+	out := &bytes.Buffer{}
+	debugOut := &bytes.Buffer{}
+	cmd := easycmd.New(
+		easycmd.WithStdOut(out),
+		easycmd.WithDebug(debugOut),
+	)
+
+	// when
+	err := cmd.Run("echo hello")
+
+	// then
+	if err != nil {
+		t.Errorf("expected nil, got %v", err)
+	}
+
+	debugResult := debugOut.String()
+	commandResult := out.String()
+
+	// 디버그 출력 확인 (DebugOut에서)
+	if !strings.Contains(debugResult, "[DEBUG] 파싱된 명령어: echo hello") {
+		t.Errorf("expected debug output to contain parsed command, got %s", debugResult)
+	}
+	if !strings.Contains(debugResult, "[DEBUG] 실행 명령어: echo") {
+		t.Errorf("expected debug output to contain command name, got %s", debugResult)
+	}
+	if !strings.Contains(debugResult, "[DEBUG] 실행 인수: [hello]") {
+		t.Errorf("expected debug output to contain command args, got %s", debugResult)
+	}
+	if !strings.Contains(debugResult, "[DEBUG] 명령어 실행 시작...") {
+		t.Errorf("expected debug output to contain start message, got %s", debugResult)
+	}
+	if !strings.Contains(debugResult, "[DEBUG] 명령어 실행 완료") {
+		t.Errorf("expected debug output to contain completion message, got %s", debugResult)
+	}
+
+	// 실제 명령어 출력 확인 (StdOut에서)
+	if !strings.Contains(commandResult, "hello") {
+		t.Errorf("expected actual command output, got %s", commandResult)
+	}
+
+	// StdOut에는 디버그 메시지가 없어야 함
+	if strings.Contains(commandResult, "[DEBUG]") {
+		t.Errorf("expected no debug messages in command output, got %s", commandResult)
+	}
+}
+
+func TestDebugModeWithDir(t *testing.T) {
+	// given
+	out := &bytes.Buffer{}
+	debugOut := &bytes.Buffer{}
+	cmd := easycmd.New(
+		easycmd.WithStdOut(out),
+		easycmd.WithDebug(debugOut),
+	)
+
+	// when
+	err := cmd.RunWithDir("pwd", "..")
+
+	// then
+	if err != nil {
+		t.Errorf("expected nil, got %v", err)
+	}
+
+	debugResult := debugOut.String()
+
+	// 디렉토리 디버그 출력 확인
+	if !strings.Contains(debugResult, "[DEBUG] 실행 디렉토리: ..") {
+		t.Errorf("expected debug output to contain run directory, got %s", debugResult)
+	}
+}
+
+func TestDebugModeShellCommand(t *testing.T) {
+	// given
+	out := &bytes.Buffer{}
+	debugOut := &bytes.Buffer{}
+	cmd := easycmd.New(
+		easycmd.WithStdOut(out),
+		easycmd.WithDebug(debugOut),
+	)
+
+	// when
+	err := cmd.RunShell("echo 'shell test'")
+
+	// then
+	if err != nil {
+		t.Errorf("expected nil, got %v", err)
+	}
+
+	debugResult := debugOut.String()
+
+	// 쉘 명령어 래핑 확인
+	if !strings.Contains(debugResult, "[DEBUG] 파싱된 명령어: bash -c echo 'shell test'") {
+		t.Errorf("expected debug output to contain shell wrapped command, got %s", debugResult)
+	}
+	if !strings.Contains(debugResult, "[DEBUG] 실행 명령어: bash") {
+		t.Errorf("expected debug output to contain bash as command name, got %s", debugResult)
+	}
+}
+
+func TestDebugOutputSeparation(t *testing.T) {
+	// given
+	stdOut := &bytes.Buffer{}
+	debugOut := &bytes.Buffer{}
+	cmd := easycmd.New(
+		easycmd.WithStdOut(stdOut),
+		easycmd.WithDebug(debugOut),
+	)
+
+	// when
+	err := cmd.Run("echo hello")
+
+	// then
+	if err != nil {
+		t.Errorf("expected nil, got %v", err)
+	}
+
+	stdOutResult := stdOut.String()
+	debugOutResult := debugOut.String()
+
+	// 명령어 출력은 StdOut에만 있어야 함
+	if !strings.Contains(stdOutResult, "hello") {
+		t.Errorf("expected command output in StdOut, got %s", stdOutResult)
+	}
+	if strings.Contains(stdOutResult, "[DEBUG]") {
+		t.Errorf("expected no debug messages in StdOut, got %s", stdOutResult)
+	}
+
+	// 디버그 출력은 DebugOut에만 있어야 함
+	if !strings.Contains(debugOutResult, "[DEBUG]") {
+		t.Errorf("expected debug messages in DebugOut, got %s", debugOutResult)
+	}
+
+	// DebugOut에는 실제 명령어 실행 결과 (줄바꿈 포함)가 없어야 함
+	// 디버그 메시지에 명령어 문자열이 포함되는 것은 정상
+	lines := strings.Split(debugOutResult, "\n")
+	for _, line := range lines {
+		if line == "hello" {
+			t.Errorf("expected no actual command execution output in DebugOut, found line: %s", line)
+		}
+	}
+}
+
+func TestDebugDefaultOutputToStderr(t *testing.T) {
+	// given - DebugOut을 명시적으로 설정하지 않음 (기본값 사용)
+	out := &bytes.Buffer{}
+	cmd := easycmd.New(
+		easycmd.WithStdOut(out),
+		easycmd.WithDebug(),
+	)
+
+	// when
+	err := cmd.Run("echo 'test'")
+
+	// then
+	if err != nil {
+		t.Errorf("expected nil, got %v", err)
+	}
+
+	result := out.String()
+
+	// StdOut에는 명령어 출력만 있고 디버그 메시지는 없어야 함 (기본적으로 stderr로 가므로)
+	if !strings.Contains(result, "test") {
+		t.Errorf("expected command output in StdOut, got %s", result)
+	}
+	if strings.Contains(result, "[DEBUG]") {
+		t.Errorf("expected no debug messages in StdOut when using default DebugOut, got %s", result)
 	}
 }
