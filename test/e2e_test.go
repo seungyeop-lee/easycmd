@@ -2,6 +2,10 @@ package test
 
 import (
 	"bytes"
+	"errors"
+	"os"
+	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/seungyeop-lee/easycmd"
@@ -46,5 +50,314 @@ func TestRunMultiLineShell(t *testing.T) {
 
 	if err != nil {
 		t.Errorf("expected nil, got %v", err)
+	}
+}
+
+func TestRunWithDir(t *testing.T) {
+	// given
+	out := &bytes.Buffer{}
+	cmd := easycmd.New(func(c *easycmd.Config) {
+		c.StdOut = out
+	})
+
+	// when
+	err := cmd.RunWithDir("pwd", "..")
+
+	// then
+	if err != nil {
+		t.Errorf("expected nil, got %v", err)
+	}
+
+	// 상위 디렉토리의 pwd 결과를 확인
+	result := out.String()
+	if !strings.Contains(result, "seungyeop-lee") {
+		t.Errorf("expected path to contain 'seungyeop-lee', got %s", result)
+	}
+}
+
+func TestRunShellWithDir(t *testing.T) {
+	// given
+	out := &bytes.Buffer{}
+	cmd := easycmd.New(func(c *easycmd.Config) {
+		c.StdOut = out
+	})
+
+	// when - 상위 디렉토리에서 현재 디렉토리명 확인
+	err := cmd.RunShellWithDir("basename $(pwd)", "..")
+
+	// then
+	if err != nil {
+		t.Errorf("expected nil, got %v", err)
+	}
+
+	result := strings.TrimSpace(out.String())
+	if result != "easycmd" {
+		t.Errorf("expected 'easycmd', got '%s'", result)
+	}
+}
+
+func TestEmptyCommand(t *testing.T) {
+	// given
+	cmd := easycmd.New()
+
+	// when
+	err := cmd.Run("")
+
+	// then
+	if err == nil {
+		t.Error("expected error for empty command, got nil")
+	}
+
+	if !errors.Is(err, easycmd.EmptyCmdError) {
+		t.Errorf("expected EmptyCmdError, got %v", err)
+	}
+}
+
+func TestInvalidCommand(t *testing.T) {
+	// given
+	cmd := easycmd.New()
+
+	// when
+	err := cmd.Run("nonexistentcommand12345")
+
+	// then
+	if err == nil {
+		t.Error("expected error for invalid command, got nil")
+		return
+	}
+
+	// 에러 메시지에 "can't start command" 또는 "command fails to run"이 포함되어야 함
+	errMsg := err.Error()
+	if !strings.Contains(errMsg, "can't start command") && !strings.Contains(errMsg, "command fails to run") {
+		t.Errorf("expected error message to contain command execution error, got: %s", errMsg)
+	}
+}
+
+func TestInvalidDirectory(t *testing.T) {
+	// given
+	cmd := easycmd.New()
+
+	// when
+	err := cmd.RunWithDir("echo test", "/nonexistent/directory/path12345")
+
+	// then
+	if err == nil {
+		t.Error("expected error for invalid directory, got nil")
+		return
+	}
+
+	// 에러 메시지 확인
+	errMsg := err.Error()
+	if !strings.Contains(errMsg, "can't start command") && !strings.Contains(errMsg, "command fails to run") {
+		t.Errorf("expected error message to contain command execution error, got: %s", errMsg)
+	}
+}
+
+func TestStdErr(t *testing.T) {
+	// given
+	out := &bytes.Buffer{}
+	errOut := &bytes.Buffer{}
+	cmd := easycmd.New(func(c *easycmd.Config) {
+		c.StdOut = out
+		c.StdErr = errOut
+	})
+
+	// when - stderr로 출력하는 명령어 실행
+	err := cmd.RunShell("echo 'error message' >&2")
+
+	// then
+	if err != nil {
+		t.Errorf("expected nil, got %v", err)
+	}
+
+	if out.String() != "" {
+		t.Errorf("expected empty stdout, got %s", out.String())
+	}
+
+	if !strings.Contains(errOut.String(), "error message") {
+		t.Errorf("expected stderr to contain 'error message', got %s", errOut.String())
+	}
+}
+
+func TestStdIn(t *testing.T) {
+	// given
+	input := strings.NewReader("hello from stdin\n")
+	out := &bytes.Buffer{}
+	cmd := easycmd.New(func(c *easycmd.Config) {
+		c.StdIn = input
+		c.StdOut = out
+	})
+
+	// when - stdin에서 입력을 읽는 명령어 실행
+	err := cmd.Run("cat")
+
+	// then
+	if err != nil {
+		t.Errorf("expected nil, got %v", err)
+	}
+
+	if !strings.Contains(out.String(), "hello from stdin") {
+		t.Errorf("expected output to contain 'hello from stdin', got %s", out.String())
+	}
+}
+
+func TestRunDirConfig(t *testing.T) {
+	// given
+	out := &bytes.Buffer{}
+	tempDir := os.TempDir()
+
+	// RunWithDir 메서드를 사용하여 runDir 설정 테스트
+	cmd := easycmd.New(func(c *easycmd.Config) {
+		c.StdOut = out
+	})
+
+	// when - RunWithDir를 사용하여 특정 디렉토리에서 실행
+	err := cmd.RunWithDir("pwd", tempDir)
+
+	// then
+	if err != nil {
+		t.Errorf("expected nil, got %v", err)
+	}
+
+	result := strings.TrimSpace(out.String())
+	// 절대 경로로 비교
+	expectedDir, _ := filepath.Abs(tempDir)
+	actualDir, _ := filepath.Abs(result)
+
+	if expectedDir != actualDir {
+		t.Errorf("expected %s, got %s", expectedDir, actualDir)
+	}
+}
+
+func TestMultipleConfigs(t *testing.T) {
+	// given
+	out := &bytes.Buffer{}
+	errOut := &bytes.Buffer{}
+	input := strings.NewReader("test input\n")
+
+	cmd := easycmd.New(
+		func(c *easycmd.Config) {
+			c.StdOut = out
+		},
+		func(c *easycmd.Config) {
+			c.StdErr = errOut
+		},
+		func(c *easycmd.Config) {
+			c.StdIn = input
+		},
+	)
+
+	// when - 복합 명령어 실행 (stdin 읽고 stdout과 stderr 모두 사용)
+	err := cmd.RunShell("cat && echo 'stderr test' >&2")
+
+	// then
+	if err != nil {
+		t.Errorf("expected nil, got %v", err)
+	}
+
+	if !strings.Contains(out.String(), "test input") {
+		t.Errorf("expected stdout to contain 'test input', got %s", out.String())
+	}
+
+	if !strings.Contains(errOut.String(), "stderr test") {
+		t.Errorf("expected stderr to contain 'stderr test', got %s", errOut.String())
+	}
+}
+
+func TestCommandParsing(t *testing.T) {
+	// given
+	out := &bytes.Buffer{}
+	cmd := easycmd.New(func(c *easycmd.Config) {
+		c.StdOut = out
+	})
+
+	// when - 복합 명령어 테스트 (Name과 Args가 올바르게 파싱되는지 간접 확인)
+	err := cmd.Run("echo hello world test")
+
+	// then
+	if err != nil {
+		t.Errorf("expected nil, got %v", err)
+	}
+
+	result := strings.TrimSpace(out.String())
+	if result != "hello world test" {
+		t.Errorf("expected 'hello world test', got '%s'", result)
+	}
+}
+
+func TestShellCommandWrapping(t *testing.T) {
+	// given
+	out := &bytes.Buffer{}
+	cmd := easycmd.New(func(c *easycmd.Config) {
+		c.StdOut = out
+	})
+
+	// when - 쉘 특화 문법 테스트 (bash 래핑이 올바르게 작동하는지 확인)
+	err := cmd.RunShell("VAR=test; echo $VAR")
+
+	// then
+	if err != nil {
+		t.Errorf("expected nil, got %v", err)
+	}
+
+	result := strings.TrimSpace(out.String())
+	if result != "test" {
+		t.Errorf("expected 'test', got '%s'", result)
+	}
+}
+
+func TestPowershellCommandWrapping(t *testing.T) {
+	// PowerShell이 설치되어 있지 않은 경우 스킵
+	if _, err := os.Stat("/usr/bin/pwsh"); os.IsNotExist(err) {
+		if _, err := os.Stat("/usr/local/bin/pwsh"); os.IsNotExist(err) {
+			t.Skip("PowerShell not installed, skipping test")
+		}
+	}
+
+	// given
+	out := &bytes.Buffer{}
+	cmd := easycmd.New(func(c *easycmd.Config) {
+		c.StdOut = out
+	})
+
+	// when - PowerShell 명령어 테스트
+	err := cmd.RunPowershell("Write-Output 'Hello PowerShell'")
+
+	// then
+	if err != nil {
+		t.Errorf("expected nil, got %v", err)
+	}
+
+	result := strings.TrimSpace(out.String())
+	if !strings.Contains(result, "Hello PowerShell") {
+		t.Errorf("expected output to contain 'Hello PowerShell', got '%s'", result)
+	}
+}
+
+func TestPowershellWithDir(t *testing.T) {
+	// PowerShell이 설치되어 있지 않은 경우 스킵
+	if _, err := os.Stat("/usr/bin/pwsh"); os.IsNotExist(err) {
+		if _, err := os.Stat("/usr/local/bin/pwsh"); os.IsNotExist(err) {
+			t.Skip("PowerShell not installed, skipping test")
+		}
+	}
+
+	// given
+	out := &bytes.Buffer{}
+	cmd := easycmd.New(func(c *easycmd.Config) {
+		c.StdOut = out
+	})
+
+	// when - PowerShell 명령어를 특정 디렉토리에서 실행
+	err := cmd.RunPowershellWithDir("Get-Location", "..")
+
+	// then
+	if err != nil {
+		t.Errorf("expected nil, got %v", err)
+	}
+
+	result := out.String()
+	if !strings.Contains(result, "seungyeop-lee") {
+		t.Errorf("expected path to contain 'seungyeop-lee', got %s", result)
 	}
 }
