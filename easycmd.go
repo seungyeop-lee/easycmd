@@ -3,81 +3,8 @@ package easycmd
 import (
 	"errors"
 	"fmt"
-	"io"
-	"os"
 	"os/exec"
-	"strings"
 )
-
-type command string
-
-var bashPrefix command = "bash -c "
-var powershellPrefix command = "powershell.exe "
-
-func (c command) ShellCommand() command {
-	return bashPrefix + c
-}
-
-func (c command) PowershellCommand() command {
-	return powershellPrefix + c
-}
-
-func (c command) Name() string {
-	args := parseCommandArgs(string(c))
-	if len(args) == 0 {
-		return ""
-	}
-	return args[0]
-}
-
-func (c command) Args() []string {
-	command := string(c)
-	switch true {
-	case strings.HasPrefix(command, bashPrefix.String()):
-		return []string{"-c", strings.ReplaceAll(command, bashPrefix.String(), "")}
-	case strings.HasPrefix(command, powershellPrefix.String()):
-		return []string{strings.ReplaceAll(command, powershellPrefix.String(), "")}
-	default:
-		args := parseCommandArgs(command)
-		if len(args) <= 1 {
-			return []string{}
-		}
-		return args[1:]
-	}
-}
-
-func (c command) String() string {
-	return string(c)
-}
-
-type runDir string
-type stdIn io.Reader
-type stdOut io.Writer
-type stdErr io.Writer
-
-type config struct {
-	RunDir   runDir
-	StdIn    stdIn
-	StdOut   stdOut
-	StdErr   stdErr
-	Debug    bool
-	DebugOut stdOut
-}
-
-func (c *config) fillDefault() {
-	if c.StdIn == nil {
-		c.StdIn = os.Stdin
-	}
-	if c.StdOut == nil {
-		c.StdOut = os.Stdout
-	}
-	if c.StdErr == nil {
-		c.StdErr = os.Stderr
-	}
-	if c.DebugOut == nil {
-		c.DebugOut = os.Stderr
-	}
-}
 
 type Cmd struct {
 	c config
@@ -172,30 +99,3 @@ func run(command command, config config) error {
 }
 
 var EmptyCmdError = errors.New("empty command")
-
-func WithDebug(debugOut ...io.Writer) configApply {
-	return func(c *config) {
-		c.Debug = true
-		if len(debugOut) > 0 {
-			c.DebugOut = debugOut[0]
-		}
-	}
-}
-
-func WithStdIn(reader io.Reader) configApply {
-	return func(c *config) {
-		c.StdIn = reader
-	}
-}
-
-func WithStdOut(writer io.Writer) configApply {
-	return func(c *config) {
-		c.StdOut = writer
-	}
-}
-
-func WithStdErr(writer io.Writer) configApply {
-	return func(c *config) {
-		c.StdErr = writer
-	}
-}
