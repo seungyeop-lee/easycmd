@@ -1,32 +1,46 @@
 package easycmd
 
-// parseCommandArgs parses command string into arguments, handling quoted strings
+// parseCommandArgs 명령어 문자열을 인수 배열로 파싱 (인용부호 처리 포함)
 func parseCommandArgs(cmd string) []string {
 	var args []string
-	var current string
-	var inQuotes bool
-	var quoteChar rune
+	var currentToken string
+	var insideQuotes bool
+	var activeQuoteChar rune
 
-	for _, r := range cmd {
-		switch {
-		case !inQuotes && (r == '"' || r == '\''):
-			inQuotes = true
-			quoteChar = r
-		case inQuotes && r == quoteChar:
-			inQuotes = false
-		case !inQuotes && r == ' ':
-			if current != "" {
-				args = append(args, current)
-				current = ""
-			}
-		default:
-			current += string(r)
+	for _, char := range cmd {
+		if !insideQuotes && isQuoteChar(char) {
+			// 인용부호 시작
+			insideQuotes = true
+			activeQuoteChar = char
+		} else if insideQuotes && char == activeQuoteChar {
+			// 인용부호 종료
+			insideQuotes = false
+		} else if !insideQuotes && char == ' ' {
+			// 공백으로 토큰 분리
+			args = addTokenIfNotEmpty(args, currentToken)
+			currentToken = ""
+		} else {
+			// 일반 문자 추가
+			currentToken += string(char)
 		}
 	}
 
-	if current != "" {
-		args = append(args, current)
-	}
+	// 마지막 토큰 추가
+	args = addTokenIfNotEmpty(args, currentToken)
+	return args
+}
 
+// isQuoteChar 인용부호 문자인지 확인
+// 예: isQuoteChar('"') -> true, isQuoteChar('a') -> false
+func isQuoteChar(r rune) bool {
+	return r == '"' || r == '\''
+}
+
+// addTokenIfNotEmpty 토큰이 비어있지 않으면 배열에 추가
+// 예: addTokenIfNotEmpty([]string{"ls"}, "file") -> []string{"ls", "file"}
+func addTokenIfNotEmpty(args []string, token string) []string {
+	if token != "" {
+		return append(args, token)
+	}
 	return args
 }
