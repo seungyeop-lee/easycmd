@@ -7,7 +7,6 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/seungyeop-lee/easycmd"
 )
@@ -574,7 +573,7 @@ func TestWithTimeout(t *testing.T) {
 	out := &bytes.Buffer{}
 	cmd := easycmd.New(
 		easycmd.WithStdOut(out),
-		easycmd.WithTimeout(2*time.Second),
+		easycmd.WithTimeoutSeconds(2),
 	)
 
 	// when - 빠르게 실행되는 명령어
@@ -594,7 +593,7 @@ func TestWithTimeout(t *testing.T) {
 func TestWithTimeoutExceeded(t *testing.T) {
 	// given
 	cmd := easycmd.New(
-		easycmd.WithTimeout(1 * time.Second),
+		easycmd.WithTimeoutSeconds(1),
 	)
 
 	// when - 타임아웃보다 오래 걸리는 명령어
@@ -608,8 +607,52 @@ func TestWithTimeoutExceeded(t *testing.T) {
 
 	// 타임아웃 에러 확인
 	errMsg := err.Error()
-	if !strings.Contains(errMsg, "타임아웃되었습니다") {
+	if !strings.Contains(errMsg, "명령어 실행 타임아웃") {
 		t.Errorf("expected timeout error message, got: %s", errMsg)
+	}
+}
+
+func TestWithTimeoutMillis(t *testing.T) {
+	// given
+	out := &bytes.Buffer{}
+	cmd := easycmd.New(
+		easycmd.WithStdOut(out),
+		easycmd.WithTimeoutMillis(2000), // 2초
+	)
+
+	// when - 빠르게 실행되는 명령어
+	err := cmd.Run("echo 'timeout millis test'")
+
+	// then
+	if err != nil {
+		t.Errorf("expected nil, got %v", err)
+	}
+
+	result := strings.TrimSpace(out.String())
+	if result != "timeout millis test" {
+		t.Errorf("expected 'timeout millis test', got '%s'", result)
+	}
+}
+
+func TestWithTimeoutVeryShort(t *testing.T) {
+	// given
+	cmd := easycmd.New(
+		easycmd.WithTimeoutMillis(1), // 1밀리초
+	)
+
+	// when - 매우 짧은 타임아웃으로 명령어 실행
+	err := cmd.Run("sleep 1")
+
+	// then
+	if err == nil {
+		t.Error("expected timeout error, got nil")
+		return
+	}
+
+	// 매우 짧은 타임아웃이므로 시작 실패 또는 실행 타임아웃 둘 다 가능
+	errMsg := err.Error()
+	if !strings.Contains(errMsg, "명령어 시작 실패") && !strings.Contains(errMsg, "명령어 실행 타임아웃") {
+		t.Errorf("expected timeout-related error message, got: %s", errMsg)
 	}
 }
 

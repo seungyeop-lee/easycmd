@@ -70,6 +70,18 @@ func WithTimeout(timeout time.Duration) configApply {
 	}
 }
 
+func WithTimeoutSeconds(seconds int) configApply {
+	return func(c *config) {
+		c.Timeout = time.Duration(seconds) * time.Second
+	}
+}
+
+func WithTimeoutMillis(millis int) configApply {
+	return func(c *config) {
+		c.Timeout = time.Duration(millis) * time.Millisecond
+	}
+}
+
 func WithEnv(env []string) configApply {
 	return func(c *config) {
 		c.Env = env

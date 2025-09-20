@@ -67,7 +67,9 @@ go vet ./...
 - `WithStdIn()`: 표준 입력 설정
 - `WithStdOut()`: 표준 출력 설정
 - `WithStdErr()`: 표준 에러 설정
-- `WithTimeout()`: 명령어 실행 타임아웃 설정
+- `WithTimeout()`: 명령어 실행 타임아웃 설정 (time.Duration)
+- `WithTimeoutSeconds()`: 명령어 실행 타임아웃 설정 (초 단위)
+- `WithTimeoutMillis()`: 명령어 실행 타임아웃 설정 (밀리초 단위)
 - `WithEnv()`: 환경변수 설정
 
 ### 테스트 구조
@@ -95,6 +97,22 @@ go vet ./...
 - 파싱된 명령어, 실행 명령어, 인수, 실행 디렉토리 출력
 - 명령어 시작/완료/실패 상태 출력
 - 별도 스트림으로 디버그 출력 분리 가능
+
+### 타임아웃 설정 가이드
+#### 사용법
+```go
+// 권장: 직관적인 API 사용
+cmd := easycmd.New(easycmd.WithTimeoutSeconds(5))    // 5초
+cmd := easycmd.New(easycmd.WithTimeoutMillis(1500))  // 1.5초
+
+// time.Duration 사용 시 주의사항
+cmd := easycmd.New(easycmd.WithTimeout(5 * time.Second))  // 올바름
+// cmd := easycmd.New(easycmd.WithTimeout(5))  // 잘못됨! 5나노초
+```
+
+#### 에러 타입
+- **명령어 시작 실패**: 매우 짧은 타임아웃으로 명령어 시작 전 데드라인 초과
+- **명령어 실행 타임아웃**: 명령어 시작 후 실행 중 타임아웃
 
 ## 코딩 컨벤션
 

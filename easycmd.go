@@ -98,6 +98,10 @@ func run(command command, config config) error {
 
 	if err := cmd.Start(); err != nil {
 		config.Logger.StartFailed(err)
+		// 명령어 시작 전 타임아웃 체크
+		if ctx != nil && errors.Is(ctx.Err(), context.DeadlineExceeded) {
+			return fmt.Errorf("명령어 시작 실패: context deadline exceeded (타임아웃: %s)", config.Timeout)
+		}
 		return fmt.Errorf("명령어를 시작할 수 없습니다: %s", err)
 	}
 	err := cmd.Wait()
@@ -106,7 +110,7 @@ func run(command command, config config) error {
 		isTimeout := ctx != nil && errors.Is(ctx.Err(), context.DeadlineExceeded)
 		config.Logger.ExecutionFailed(err, isTimeout)
 		if isTimeout {
-			return fmt.Errorf("명령어 실행이 타임아웃되었습니다 (%s): %v", config.Timeout, err)
+			return fmt.Errorf("명령어 실행 타임아웃: signal: killed (타임아웃: %s)", config.Timeout)
 		}
 		return fmt.Errorf("명령어 실행이 실패했거나 성공적으로 완료되지 않았습니다: %v", err)
 	}

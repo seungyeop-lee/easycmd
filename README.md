@@ -104,7 +104,7 @@ cmd := easycmd.New(
     easycmd.WithStdIn(strings.NewReader("input")), // 표준 입력 설정
     easycmd.WithStdOut(os.Stdout),                 // 표준 출력 설정
     easycmd.WithStdErr(os.Stderr),                 // 표준 에러 설정
-    easycmd.WithTimeout(30*time.Second),           // 타임아웃 설정
+    easycmd.WithTimeoutSeconds(30),                // 타임아웃 설정 (30초)
     easycmd.WithEnv([]string{"VAR=value"}),        // 환경변수 설정
 )
 
@@ -134,19 +134,31 @@ fmt.Println("디버그 출력:", debugOut.String())
 ### 타임아웃 설정
 
 ```go
-import (
-    "time"
-)
-
-// 5초 타임아웃 설정
-cmd := easycmd.New(easycmd.WithTimeout(5 * time.Second))
+// 권장: 직관적인 API 사용
+cmd := easycmd.New(easycmd.WithTimeoutSeconds(5))    // 5초
 err := cmd.Run("sleep 3") // 정상 완료
 
-// 타임아웃 초과 시 에러 발생
-err = cmd.Run("sleep 10") // 타임아웃 에러
+cmd = easycmd.New(easycmd.WithTimeoutMillis(1500))   // 1.5초
+err = cmd.Run("sleep 3")  // 1.5초 후 타임아웃
+
+// time.Duration 직접 사용도 가능
+import "time"
+cmd = easycmd.New(easycmd.WithTimeout(5 * time.Second))
+err = cmd.Run("sleep 10") // 5초 후 타임아웃
+
 if err != nil {
     fmt.Printf("명령어 실행 실패: %v\n", err)
 }
+```
+
+⚠️ **주의사항**: `WithTimeout()`에 숫자만 전달하면 나노초 단위로 해석됩니다!
+```go
+// ❌ 잘못된 사용법
+cmd := easycmd.New(easycmd.WithTimeout(5))  // 5나노초 (거의 즉시 타임아웃)
+
+// ✅ 올바른 사용법
+cmd := easycmd.New(easycmd.WithTimeoutSeconds(5))       // 5초
+cmd := easycmd.New(easycmd.WithTimeout(5 * time.Second)) // 5초
 ```
 
 ### 환경변수 설정
@@ -181,7 +193,7 @@ cmd := easycmd.New(
     easycmd.WithStdOut(out),
     easycmd.WithStdErr(os.Stderr),
     easycmd.WithDebug(debugOut),
-    easycmd.WithTimeout(10*time.Second),
+    easycmd.WithTimeoutSeconds(10),                 // 10초 타임아웃
     easycmd.WithEnv([]string{"LANG=ko_KR.UTF-8"}),
 )
 
@@ -206,7 +218,9 @@ err := cmd.RunShell("cat && echo 'processing...' >&2")
 - `WithStdOut(writer io.Writer) configApply`: 표준 출력 설정
 - `WithStdErr(writer io.Writer) configApply`: 표준 에러 설정
 - `WithDebug(debugOut ...io.Writer) configApply`: 디버그 모드 활성화 및 디버그 출력 스트림 설정
-- `WithTimeout(timeout time.Duration) configApply`: 명령어 실행 타임아웃 설정
+- `WithTimeout(timeout time.Duration) configApply`: 명령어 실행 타임아웃 설정 (time.Duration)
+- `WithTimeoutSeconds(seconds int) configApply`: 명령어 실행 타임아웃 설정 (초 단위) ⭐ 권장
+- `WithTimeoutMillis(millis int) configApply`: 명령어 실행 타임아웃 설정 (밀리초 단위) ⭐ 권장
 - `WithEnv(env []string) configApply`: 환경변수 설정
 
 #### 디버그 모드 출력 내용
@@ -234,6 +248,25 @@ if err != nil {
 // 빈 명령어에 대한 특별한 에러
 if errors.Is(err, easycmd.EmptyCmdError) {
     fmt.Println("빈 명령어입니다")
+}
+```
+
+### 타임아웃 에러 유형
+
+타임아웃 설정 시 발생할 수 있는 두 가지 에러 유형:
+
+```go
+cmd := easycmd.New(easycmd.WithTimeoutMillis(1)) // 매우 짧은 타임아웃
+err := cmd.Run("sleep 1")
+
+if err != nil {
+    errMsg := err.Error()
+
+    if strings.Contains(errMsg, "명령어 시작 실패") {
+        fmt.Println("명령어 시작 전 타임아웃 발생")
+    } else if strings.Contains(errMsg, "명령어 실행 타임아웃") {
+        fmt.Println("명령어 실행 중 타임아웃 발생")
+    }
 }
 ```
 
