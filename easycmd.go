@@ -23,7 +23,11 @@ func (c command) PowershellCommand() command {
 }
 
 func (c command) Name() string {
-	return strings.Split(string(c), " ")[0]
+	args := parseCommandArgs(string(c))
+	if len(args) == 0 {
+		return ""
+	}
+	return args[0]
 }
 
 func (c command) Args() []string {
@@ -34,12 +38,47 @@ func (c command) Args() []string {
 	case strings.HasPrefix(command, powershellPrefix.String()):
 		return []string{strings.ReplaceAll(command, powershellPrefix.String(), "")}
 	default:
-		return strings.Split(command, " ")[1:]
+		args := parseCommandArgs(command)
+		if len(args) <= 1 {
+			return []string{}
+		}
+		return args[1:]
 	}
 }
 
 func (c command) String() string {
 	return string(c)
+}
+
+// parseCommandArgs parses command string into arguments, handling quoted strings
+func parseCommandArgs(cmd string) []string {
+	var args []string
+	var current string
+	var inQuotes bool
+	var quoteChar rune
+
+	for _, r := range cmd {
+		switch {
+		case !inQuotes && (r == '"' || r == '\''):
+			inQuotes = true
+			quoteChar = r
+		case inQuotes && r == quoteChar:
+			inQuotes = false
+		case !inQuotes && r == ' ':
+			if current != "" {
+				args = append(args, current)
+				current = ""
+			}
+		default:
+			current += string(r)
+		}
+	}
+
+	if current != "" {
+		args = append(args, current)
+	}
+
+	return args
 }
 
 type runDir string

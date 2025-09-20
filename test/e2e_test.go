@@ -285,6 +285,69 @@ func TestCommandParsing(t *testing.T) {
 	}
 }
 
+func TestCommandParsingWithQuotes(t *testing.T) {
+	// given
+	out := &bytes.Buffer{}
+	cmd := easycmd.New(func(c *easycmd.Config) {
+		c.StdOut = out
+	})
+
+	// when - 따옴표가 포함된 명령어 테스트
+	err := cmd.Run("echo 'hello world'")
+
+	// then
+	if err != nil {
+		t.Errorf("expected nil, got %v", err)
+	}
+
+	result := strings.TrimSpace(out.String())
+	if result != "hello world" {
+		t.Errorf("expected 'hello world', got '%s'", result)
+	}
+}
+
+func TestCommandParsingWithDoubleQuotes(t *testing.T) {
+	// given
+	out := &bytes.Buffer{}
+	cmd := easycmd.New(func(c *easycmd.Config) {
+		c.StdOut = out
+	})
+
+	// when - 이중 따옴표가 포함된 명령어 테스트
+	err := cmd.Run(`echo "hello world"`)
+
+	// then
+	if err != nil {
+		t.Errorf("expected nil, got %v", err)
+	}
+
+	result := strings.TrimSpace(out.String())
+	if result != "hello world" {
+		t.Errorf("expected 'hello world', got '%s'", result)
+	}
+}
+
+func TestSingleCommand(t *testing.T) {
+	// given
+	out := &bytes.Buffer{}
+	cmd := easycmd.New(func(c *easycmd.Config) {
+		c.StdOut = out
+	})
+
+	// when - 인수가 없는 단일 명령어 테스트
+	err := cmd.Run("pwd")
+
+	// then
+	if err != nil {
+		t.Errorf("expected nil, got %v", err)
+	}
+
+	result := strings.TrimSpace(out.String())
+	if result == "" {
+		t.Error("expected non-empty output from pwd command")
+	}
+}
+
 func TestShellCommandWrapping(t *testing.T) {
 	// given
 	out := &bytes.Buffer{}
