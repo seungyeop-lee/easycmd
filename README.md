@@ -97,12 +97,15 @@ err = cmd.RunPowershellWithDir("Get-ChildItem", "C:\\temp")
 import (
     "os"
     "strings"
+    "time"
 )
 
 cmd := easycmd.New(
     easycmd.WithStdIn(strings.NewReader("input")), // 표준 입력 설정
     easycmd.WithStdOut(os.Stdout),                 // 표준 출력 설정
     easycmd.WithStdErr(os.Stderr),                 // 표준 에러 설정
+    easycmd.WithTimeout(30*time.Second),           // 타임아웃 설정
+    easycmd.WithEnv([]string{"VAR=value"}),        // 환경변수 설정
 )
 
 err := cmd.Run("cat") // 표준 입력에서 "input"을 읽어서 출력
@@ -128,12 +131,45 @@ err = cmd.Run("echo hello world")
 fmt.Println("디버그 출력:", debugOut.String())
 ```
 
+### 타임아웃 설정
+
+```go
+import (
+    "time"
+)
+
+// 5초 타임아웃 설정
+cmd := easycmd.New(easycmd.WithTimeout(5 * time.Second))
+err := cmd.Run("sleep 3") // 정상 완료
+
+// 타임아웃 초과 시 에러 발생
+err = cmd.Run("sleep 10") // 타임아웃 에러
+if err != nil {
+    fmt.Printf("명령어 실행 실패: %v\n", err)
+}
+```
+
+### 환경변수 설정
+
+```go
+cmd := easycmd.New(
+    easycmd.WithEnv([]string{
+        "MY_VAR=hello",
+        "ANOTHER_VAR=world",
+    }),
+)
+
+// 환경변수를 사용하는 쉘 명령어 실행
+err := cmd.RunShell("echo $MY_VAR $ANOTHER_VAR")
+```
+
 ### 복합 설정 사용
 
 ```go
 import (
     "bytes"
     "strings"
+    "time"
 )
 
 out := &bytes.Buffer{}
@@ -145,6 +181,8 @@ cmd := easycmd.New(
     easycmd.WithStdOut(out),
     easycmd.WithStdErr(os.Stderr),
     easycmd.WithDebug(debugOut),
+    easycmd.WithTimeout(10*time.Second),
+    easycmd.WithEnv([]string{"LANG=ko_KR.UTF-8"}),
 )
 
 err := cmd.RunShell("cat && echo 'processing...' >&2")
@@ -168,6 +206,8 @@ err := cmd.RunShell("cat && echo 'processing...' >&2")
 - `WithStdOut(writer io.Writer) configApply`: 표준 출력 설정
 - `WithStdErr(writer io.Writer) configApply`: 표준 에러 설정
 - `WithDebug(debugOut ...io.Writer) configApply`: 디버그 모드 활성화 및 디버그 출력 스트림 설정
+- `WithTimeout(timeout time.Duration) configApply`: 명령어 실행 타임아웃 설정
+- `WithEnv(env []string) configApply`: 환경변수 설정
 
 #### 디버그 모드 출력 내용
 
@@ -177,7 +217,10 @@ err := cmd.RunShell("cat && echo 'processing...' >&2")
 - 실행될 명령어 이름
 - 명령어 인수 배열
 - 실행 디렉토리 (설정된 경우)
+- 타임아웃 설정 (설정된 경우)
+- 환경변수 개수 (설정된 경우)
 - 명령어 실행 시작/완료/실패 메시지
+- 명령어 실행 시간 측정
 
 ## 에러 처리
 
