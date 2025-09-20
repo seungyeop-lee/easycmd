@@ -31,10 +31,10 @@ func (c command) Name() string {
 func (c command) Args() []string {
 	command := string(c)
 	if strings.HasPrefix(command, bashPrefix.String()) {
-		return []string{"-c", strings.ReplaceAll(command, bashPrefix.String(), "")}
+		return []string{"-c", strings.TrimPrefix(command, bashPrefix.String())}
 	}
 	if strings.HasPrefix(command, powershellPrefix.String()) {
-		return []string{strings.ReplaceAll(command, powershellPrefix.String(), "")}
+		return []string{"-Command", strings.TrimPrefix(command, powershellPrefix.String())}
 	}
 
 	args := parseCommandArgs(command)
