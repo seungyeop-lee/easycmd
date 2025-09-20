@@ -3,6 +3,7 @@ package easycmd
 import (
 	"io"
 	"os"
+	"time"
 )
 
 type runDir string
@@ -17,6 +18,8 @@ type config struct {
 	StdErr   stdErr
 	Debug    bool
 	DebugOut stdOut
+	Timeout  time.Duration
+	Env      []string
 }
 
 func (c *config) fillDefault() {
@@ -58,5 +61,17 @@ func WithStdOut(writer io.Writer) configApply {
 func WithStdErr(writer io.Writer) configApply {
 	return func(c *config) {
 		c.StdErr = writer
+	}
+}
+
+func WithTimeout(timeout time.Duration) configApply {
+	return func(c *config) {
+		c.Timeout = timeout
+	}
+}
+
+func WithEnv(env []string) configApply {
+	return func(c *config) {
+		c.Env = env
 	}
 }

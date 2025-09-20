@@ -1,9 +1,11 @@
 package easycmd
 
+import "strings"
+
 // parseCommandArgs 명령어 문자열을 인수 배열로 파싱 (인용부호 처리 포함)
 func parseCommandArgs(cmd string) []string {
 	var args []string
-	var currentToken string
+	var currentToken strings.Builder
 	var insideQuotes bool
 	var activeQuoteChar rune
 
@@ -17,16 +19,16 @@ func parseCommandArgs(cmd string) []string {
 			insideQuotes = false
 		} else if !insideQuotes && char == ' ' {
 			// 공백으로 토큰 분리
-			args = addTokenIfNotEmpty(args, currentToken)
-			currentToken = ""
+			args = addTokenIfNotEmpty(args, currentToken.String())
+			currentToken.Reset()
 		} else {
 			// 일반 문자 추가
-			currentToken += string(char)
+			currentToken.WriteRune(char)
 		}
 	}
 
 	// 마지막 토큰 추가
-	args = addTokenIfNotEmpty(args, currentToken)
+	args = addTokenIfNotEmpty(args, currentToken.String())
 	return args
 }
 

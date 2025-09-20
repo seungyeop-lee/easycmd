@@ -4,8 +4,13 @@ import "strings"
 
 type command string
 
-var bashPrefix command = "bash -c "
-var powershellPrefix command = "powershell.exe "
+const (
+	bashPrefixStr       = "bash -c "
+	powershellPrefixStr = "powershell.exe "
+)
+
+var bashPrefix command = bashPrefixStr
+var powershellPrefix command = powershellPrefixStr
 
 func (c command) ShellCommand() command {
 	return bashPrefix + c
@@ -25,18 +30,18 @@ func (c command) Name() string {
 
 func (c command) Args() []string {
 	command := string(c)
-	switch true {
-	case strings.HasPrefix(command, bashPrefix.String()):
+	if strings.HasPrefix(command, bashPrefix.String()) {
 		return []string{"-c", strings.ReplaceAll(command, bashPrefix.String(), "")}
-	case strings.HasPrefix(command, powershellPrefix.String()):
-		return []string{strings.ReplaceAll(command, powershellPrefix.String(), "")}
-	default:
-		args := parseCommandArgs(command)
-		if len(args) <= 1 {
-			return []string{}
-		}
-		return args[1:]
 	}
+	if strings.HasPrefix(command, powershellPrefix.String()) {
+		return []string{strings.ReplaceAll(command, powershellPrefix.String(), "")}
+	}
+
+	args := parseCommandArgs(command)
+	if len(args) <= 1 {
+		return []string{}
+	}
+	return args[1:]
 }
 
 func (c command) String() string {

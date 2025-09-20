@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/seungyeop-lee/easycmd"
 )
@@ -120,9 +121,9 @@ func TestInvalidCommand(t *testing.T) {
 		return
 	}
 
-	// 에러 메시지에 "can't start command" 또는 "command fails to run"이 포함되어야 함
+	// 에러 메시지에 "명령어를 시작할 수 없습니다" 또는 "명령어 실행이 실패했거나"가 포함되어야 함
 	errMsg := err.Error()
-	if !strings.Contains(errMsg, "can't start command") && !strings.Contains(errMsg, "command fails to run") {
+	if !strings.Contains(errMsg, "명령어를 시작할 수 없습니다") && !strings.Contains(errMsg, "명령어 실행이 실패했거나") {
 		t.Errorf("expected error message to contain command execution error, got: %s", errMsg)
 	}
 }
@@ -142,7 +143,7 @@ func TestInvalidDirectory(t *testing.T) {
 
 	// 에러 메시지 확인
 	errMsg := err.Error()
-	if !strings.Contains(errMsg, "can't start command") && !strings.Contains(errMsg, "command fails to run") {
+	if !strings.Contains(errMsg, "명령어를 시작할 수 없습니다") && !strings.Contains(errMsg, "명령어 실행이 실패했거나") {
 		t.Errorf("expected error message to contain command execution error, got: %s", errMsg)
 	}
 }
@@ -565,5 +566,99 @@ func TestDebugDefaultOutputToStderr(t *testing.T) {
 	}
 	if strings.Contains(result, "[DEBUG]") {
 		t.Errorf("expected no debug messages in StdOut when using default DebugOut, got %s", result)
+	}
+}
+
+func TestWithTimeout(t *testing.T) {
+	// given
+	out := &bytes.Buffer{}
+	cmd := easycmd.New(
+		easycmd.WithStdOut(out),
+		easycmd.WithTimeout(2*time.Second),
+	)
+
+	// when - 빠르게 실행되는 명령어
+	err := cmd.Run("echo 'timeout test'")
+
+	// then
+	if err != nil {
+		t.Errorf("expected nil, got %v", err)
+	}
+
+	result := strings.TrimSpace(out.String())
+	if result != "timeout test" {
+		t.Errorf("expected 'timeout test', got '%s'", result)
+	}
+}
+
+func TestWithTimeoutExceeded(t *testing.T) {
+	// given
+	cmd := easycmd.New(
+		easycmd.WithTimeout(1 * time.Second),
+	)
+
+	// when - 타임아웃보다 오래 걸리는 명령어
+	err := cmd.Run("sleep 3")
+
+	// then
+	if err == nil {
+		t.Error("expected timeout error, got nil")
+		return
+	}
+
+	// 타임아웃 에러 확인
+	errMsg := err.Error()
+	if !strings.Contains(errMsg, "타임아웃되었습니다") {
+		t.Errorf("expected timeout error message, got: %s", errMsg)
+	}
+}
+
+func TestWithEnv(t *testing.T) {
+	// given
+	out := &bytes.Buffer{}
+	testEnv := []string{"TEST_VAR=hello_world", "ANOTHER_VAR=test_value"}
+	cmd := easycmd.New(
+		easycmd.WithStdOut(out),
+		easycmd.WithEnv(testEnv),
+	)
+
+	// when - 환경변수를 출력하는 쉘 명령어
+	err := cmd.RunShell("echo $TEST_VAR")
+
+	// then
+	if err != nil {
+		t.Errorf("expected nil, got %v", err)
+	}
+
+	result := strings.TrimSpace(out.String())
+	if result != "hello_world" {
+		t.Errorf("expected 'hello_world', got '%s'", result)
+	}
+}
+
+func TestWithEnvMultiple(t *testing.T) {
+	// given
+	out := &bytes.Buffer{}
+	testEnv := []string{
+		"VAR1=value1",
+		"VAR2=value2",
+		"VAR3=value3",
+	}
+	cmd := easycmd.New(
+		easycmd.WithStdOut(out),
+		easycmd.WithEnv(testEnv),
+	)
+
+	// when - 여러 환경변수를 출력하는 쉘 명령어
+	err := cmd.RunShell("echo $VAR1 $VAR2 $VAR3")
+
+	// then
+	if err != nil {
+		t.Errorf("expected nil, got %v", err)
+	}
+
+	result := strings.TrimSpace(out.String())
+	if result != "value1 value2 value3" {
+		t.Errorf("expected 'value1 value2 value3', got '%s'", result)
 	}
 }
