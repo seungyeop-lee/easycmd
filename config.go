@@ -12,14 +12,13 @@ type stdOut io.Writer
 type stdErr io.Writer
 
 type config struct {
-	RunDir   runDir
-	StdIn    stdIn
-	StdOut   stdOut
-	StdErr   stdErr
-	Debug    bool
-	DebugOut stdOut
-	Timeout  time.Duration
-	Env      []string
+	RunDir  runDir
+	StdIn   stdIn
+	StdOut  stdOut
+	StdErr  stdErr
+	Logger  Logger
+	Timeout time.Duration
+	Env     []string
 }
 
 func (c *config) fillDefault() {
@@ -32,17 +31,18 @@ func (c *config) fillDefault() {
 	if c.StdErr == nil {
 		c.StdErr = os.Stderr
 	}
-	if c.DebugOut == nil {
-		c.DebugOut = os.Stderr
+	if c.Logger == nil {
+		c.Logger = NewNoOpLogger()
 	}
 }
 
 func WithDebug(debugOut ...io.Writer) configApply {
 	return func(c *config) {
-		c.Debug = true
+		var out io.Writer = os.Stderr
 		if len(debugOut) > 0 {
-			c.DebugOut = debugOut[0]
+			out = debugOut[0]
 		}
+		c.Logger = NewDebugLogger(out)
 	}
 }
 
