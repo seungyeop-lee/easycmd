@@ -2,8 +2,9 @@ package test
 
 import (
 	"bytes"
-	"github.com/seungyeop-lee/easycmd"
 	"testing"
+
+	"github.com/seungyeop-lee/easycmd"
 )
 
 func TestSimple(t *testing.T) {
